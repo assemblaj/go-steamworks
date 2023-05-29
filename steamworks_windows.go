@@ -4,11 +4,17 @@
 package steamworks
 
 import (
+	"errors"
 	"runtime"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
+
+// #cgo LDFLAGS: -L. -lsteam_export
+// #include "steam_export.h"
+
+import "C"
 
 const is32Bit = unsafe.Sizeof(int(0)) == 4
 
@@ -71,6 +77,7 @@ func Init() bool {
 	if err != nil {
 		panic(err)
 	}
+	manualDispatch_Init()
 	return byte(v) != 0
 }
 
@@ -326,4 +333,221 @@ func (s steamUtils) IsSteamRunningOnSteamDeck() bool {
 	}
 
 	return byte(v) != 0
+}
+
+func release(message SteamNetworkingMessage_t) {
+	C.ReleaseSteamNetworkingMessageWrapper(&message)
+}
+
+type steamNetworkingMessages uintptr
+
+func SteamNetworkingMessages() ISteamNetworkingMessages {
+	v, err := theDLL.call(flatAPI_SteamNetworkingMessages)
+	if err != nil {
+		panic(err)
+	}
+	return steamNetworkingMessages(v)
+}
+
+func (s steamNetworkingMessages) SendMessageToUser(identity SteamNetworkingIdentity, data []byte, sendFlags int, channel int) EResult {
+	cID := uintptr(unsafe.Pointer(&identity))
+	cData := uintptr(unsafe.Pointer(&data[0]))
+	cLen := uintptr(len(data))
+	cSendFlags := uintptr(sendFlags)
+	cChannel := uintptr(channel)
+
+	v, err := theDLL.call(flatAPI_ISteamNetworkingMessages_SendMessageToUser, uintptr(s), cID, cData, cLen, cSendFlags, cChannel)
+	if err != nil {
+		panic(err)
+	}
+	return EResult(v)
+}
+
+func (s steamNetworkingMessages) ReceiveMessagesOnChannel(localChannel int, maxMessages int) ([]SteamNetworkingMessage_t, EResult) {
+	cLocalChannel := uintptr(localChannel)
+	cMaxMessages := uintptr(maxMessages)
+	data := make([]SteamNetworkingMessage_t, maxMessages)
+	cData := uintptr(unsafe.Pointer(&data[0]))
+
+	v, err := theDLL.call(flatAPI_ISteamNetworkingMessages_ReceiveMessagesOnChannel, uintptr(s), cLocalChannel, cData, cMaxMessages)
+	if err != nil {
+		panic(err)
+	}
+	result := EResult(v)
+	switch result {
+	case EResultOK:
+		return data, result
+	default:
+		return nil, result
+	}
+}
+
+func (s steamNetworkingMessages) AcceptSessionWithUser(identityRemote SteamNetworkingIdentity) bool {
+	v, err := theDLL.call(flatAPI_ISteamNetworkingMessages_AcceptSessionWithUser, uintptr(s), uintptr(unsafe.Pointer(&identityRemote)))
+	if err != nil {
+		panic(err)
+	}
+	return byte(v) != 0
+}
+
+func (s steamNetworkingMessages) CloseSessionWithUser(identityRemote SteamNetworkingIdentity) bool {
+	v, err := theDLL.call(flatAPI_ISteamNetworkingMessages_CloseSessionWithUser, uintptr(s), uintptr(unsafe.Pointer(&identityRemote)))
+	if err != nil {
+		panic(err)
+	}
+	return byte(v) != 0
+
+}
+
+func (s steamNetworkingMessages) CloseChannelWithUser(identityRemote SteamNetworkingIdentity, nLocalChannel int) bool {
+	v, err := theDLL.call(flatAPI_ISteamNetworkingMessages_CloseChannelWithUser, uintptr(s), uintptr(unsafe.Pointer(&identityRemote)), uintptr(nLocalChannel))
+	if err != nil {
+		panic(err)
+	}
+	return byte(v) != 0
+}
+
+func (s steamNetworkingMessages) GetSessionConnectionInfo(identityRemote SteamNetworkingIdentity) (ESteamNetworkingConnectionState, SteamNetConnectionInfo_t, SteamNetConnectionRealTimeStatus_t) {
+	info := SteamNetConnectionInfo_t{}
+	stats := SteamNetConnectionRealTimeStatus_t{}
+
+	v, err := theDLL.call(flatAPI_ISteamNetworkingMessages_GetSessionConnectionInfo, uintptr(s), uintptr(unsafe.Pointer(&identityRemote)), uintptr(unsafe.Pointer(&info)), uintptr(unsafe.Pointer(&stats)))
+	if err != nil {
+		panic(err)
+	}
+	return ESteamNetworkingConnectionState(v), info, stats
+}
+
+type steamMatchmaking uintptr
+
+func SteamMatchmaking() ISteamMatchmaking {
+	v, err := theDLL.call(flatAPI_SteamNetworkingMessages)
+	if err != nil {
+		panic(err)
+	}
+	return steamMatchmaking(v)
+}
+
+func (s steamMatchmaking) CreateLobby(eLobbyType ELobbyType, cMaxMembers int) (msg LobbyCreated_t, err error) {
+	v, err := theDLL.call(flatAPI_SteamAPI_ISteamMatchmaking_CreateLobby, uintptr(s), uintptr(eLobbyType), uintptr(cMaxMembers))
+	if err != nil {
+		panic(err)
+	}
+	apiHandle := SteamAPICallbackHandle(v)
+	data := getAPICallResult(apiHandle)
+	if data != nil {
+		created := (*LobbyCreated_t)(unsafe.Pointer(&data[0]))
+		return *created, nil
+	} else {
+		return msg, errors.New("could not complete CreateLobby call")
+	}
+}
+
+func (s steamMatchmaking) RequestLobbyList() (list LobbyMatchList_t, err error) {
+	v, err := theDLL.call(flatAPI_SteamAPI_ISteamMatchmaking_RequestLobbyList, uintptr(s))
+	if err != nil {
+		panic(err)
+	}
+	apiHandle := SteamAPICallbackHandle(v)
+	data := getAPICallResult(apiHandle)
+	if data != nil {
+		created := (*LobbyMatchList_t)(unsafe.Pointer(&data[0]))
+		return *created, nil
+	} else {
+		return list, errors.New("could not complete RequestLobbyList call")
+	}
+}
+
+func (s steamMatchmaking) LeaveLobby(steamIDLobby CSteamID) {
+	_, err := theDLL.call(flatAPI_SteamAPI_ISteamMatchmaking_LeaveLobby, uintptr(s), uintptr(steamIDLobby))
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (s steamMatchmaking) GetLobbyByIndex(iLobby int) CSteamID {
+	v, err := theDLL.call(flatAPI_SteamAPI_ISteamMatchmaking_GetLobbyByIndex, uintptr(s), uintptr(iLobby))
+	if err != nil {
+		panic(err)
+	}
+	return CSteamID(v)
+}
+
+func getHSteamPipe() HSteamPipe {
+	v, err := theDLL.call(SteamAPI_GetHSteamPipe)
+	if err != nil {
+		panic(err)
+	}
+	return HSteamPipe(v)
+}
+
+func manualDispatch_Init() {
+	_, err := theDLL.call(SteamAPI_ManualDispatch_Init)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func manualDispatch_RunFrame(hSteamPipe HSteamPipe) {
+	_, err := theDLL.call(SteamAPI_ManualDispatch_RunFrame)
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+func manualDispatch_GetNextCallback(hSteamPipe HSteamPipe) (CallbackMsg_t, bool) {
+	var callback CallbackMsg_t
+	v, err := theDLL.call(SteamAPI_ManualDispatch_GetNextCallback, uintptr(hSteamPipe), uintptr(unsafe.Pointer(&callback)))
+	if err != nil {
+		panic(err)
+	}
+	return callback, v != 0
+}
+
+func manualDispatch_FreeLastCallback(hSteamPipe HSteamPipe) {
+	_, err := theDLL.call(SteamAPI_ManualDispatch_FreeLastCallback)
+	if err != nil {
+		panic(err)
+	}
+
+}
+
+func manualDispatch_GetAPICallResult(hSteamPipe HSteamPipe, hSteamAPICall SteamAPICallbackHandle,
+	cubCallback int, iCallbackExpected int) ([]byte, bool) {
+	var failed int
+	data := make([]byte, cubCallback)
+
+	v, err := theDLL.call(SteamAPI_ManualDispatch_GetAPICallResult,
+		uintptr(hSteamPipe), uintptr(hSteamAPICall),
+		uintptr(unsafe.Pointer(&data[0])), uintptr(cubCallback), uintptr(iCallbackExpected), uintptr(failed))
+	if err != nil {
+		panic(err)
+	}
+	return data, byte(v) != 0
+
+}
+
+func getAPICallResult(handle SteamAPICallbackHandle) []byte {
+	hSteamPipe := getHSteamPipe()
+	manualDispatch_RunFrame(hSteamPipe)
+	for callback, available := manualDispatch_GetNextCallback(hSteamPipe); available; {
+		// Check for dispatching API call results
+		if callback.m_iCallback == k_iSteamUtilsCallbacks+3 {
+			pCallCompleted := (*SteamAPICallCompleted_t)(unsafe.Pointer(callback.m_pubParam))
+			if pCallCompleted.m_hAsyncCall != handle {
+				continue
+			}
+			if data, success := manualDispatch_GetAPICallResult(
+				hSteamPipe, pCallCompleted.m_hAsyncCall,
+				callback.m_cubParam, callback.m_iCallback); success {
+				return data
+			}
+		} //else {
+		// 	// Look at callback.m_iCallback to see what kind of callback it is,
+		// 	// and dispatch to appropriate handler(s)
+		// }
+		manualDispatch_FreeLastCallback(hSteamPipe)
+	}
+	return nil
 }
