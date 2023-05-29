@@ -171,17 +171,17 @@ const (
 )
 
 const (
-	cchSteamNetworkingMaxConnectionCloseReason = 128
-	cchSteamNetworkingMaxConnectionDescription = 128
+	SteamNetworkingMaxConnectionCloseReason = 128
+	SteamNetworkingMaxConnectionDescription = 128
 )
 
 const (
-	nSteamNetworkConnectionInfoFlags_Unauthenticated = 1
-	nSteamNetworkConnectionInfoFlags_Unencrypted     = 2
-	nSteamNetworkConnectionInfoFlags_LoopbackBuffers = 4
-	nSteamNetworkConnectionInfoFlags_Fast            = 8
-	nSteamNetworkConnectionInfoFlags_Relayed         = 16
-	nSteamNetworkConnectionInfoFlags_DualWifi        = 32
+	SteamNetworkConnectionInfoFlags_Unauthenticated = 1
+	SteamNetworkConnectionInfoFlags_Unencrypted     = 2
+	SteamNetworkConnectionInfoFlags_LoopbackBuffers = 4
+	SteamNetworkConnectionInfoFlags_Fast            = 8
+	SteamNetworkConnectionInfoFlags_Relayed         = 16
+	SteamNetworkConnectionInfoFlags_DualWifi        = 32
 )
 
 type IPv4MappedAddress struct {
@@ -215,48 +215,48 @@ type SteamNetworkingIdentity struct {
 }
 
 type SteamNetConnectionInfo_t struct {
-	identityRemote        SteamNetworkingIdentity
+	IdentityRemote        SteamNetworkingIdentity
 	UserData              uint64
 	ListenSocket          HSteamListenSocket
-	addrRemote            SteamNetworkingIPAddr
+	AddrRemote            SteamNetworkingIPAddr
 	pad1                  uint16
-	idPOPRemote           SteamNetworkingPOPID
-	idPOPRelay            SteamNetworkingPOPID
-	eState                ESteamNetworkingConnectionState
+	IdPOPRemote           SteamNetworkingPOPID
+	IdPOPRelay            SteamNetworkingPOPID
+	State                 ESteamNetworkingConnectionState
 	EndReason             int
-	EndDebug              [cchSteamNetworkingMaxConnectionCloseReason]byte
-	ConnectionDescription [cchSteamNetworkingMaxConnectionDescription]byte
+	EndDebug              [SteamNetworkingMaxConnectionCloseReason]byte
+	ConnectionDescription [SteamNetworkingMaxConnectionDescription]byte
 	Flags                 int /// Misc flags.  Bitmask of nSteamNetworkConnectionInfoFlags_Xxxx
 	reserved              [63]uint32
 }
 
 type SteamNetConnectionRealTimeStatus_t struct {
 	/// High level state of the connection
-	m_eState ESteamNetworkingConnectionState
+	State ESteamNetworkingConnectionState
 	/// Current ping (ms)
-	m_nPing int
+	Ping int
 
 	/// Connection quality measured locally, 0...1.  (Percentage of packets delivered
 	/// end-to-end in order).
-	m_flConnectionQualityLocal float64
+	ConnectionQualityLocal float64
 
 	/// Packet delivery success rate as observed from remote host
-	m_flConnectionQualityRemote float64
+	ConnectionQualityRemote float64
 
 	/// Current data rates from recent history.
-	m_flOutPacketsPerSec float64
-	m_flOutBytesPerSec   float64
-	m_flInPacketsPerSec  float64
-	m_flInBytesPerSec    float64
+	OutPacketsPerSec float64
+	OutBytesPerSec   float64
+	InPacketsPerSec  float64
+	InBytesPerSec    float64
 
-	m_nSendRateBytesPerSecond int
-	m_cbPendingUnreliable     int
-	m_cbPendingReliable       int
+	SendRateBytesPerSecond int
+	PendingUnreliable      int
+	PendingReliable        int
 	/// Number of bytes of reliable data that has been placed the wire, but
 	/// for which we have not yet received an acknowledgment, and thus we may
 	/// have to re-transmit.
-	m_cbSentUnackedReliable int
-	m_usecQueueTime         SteamNetworkingMicroseconds
+	SentUnackedReliable int
+	QueueTime           SteamNetworkingMicroseconds
 	// Internal stuff, room to change API easily
 	reserved [16]uint32
 }
@@ -279,17 +279,17 @@ type SteamNetworkingMessage_t struct {
 type ELobbyType int
 
 const (
-	k_ELobbyTypePrivate     ELobbyType = 0 // only way to join the lobby is to invite to someone else
-	k_ELobbyTypeFriendsOnly ELobbyType = 1 // shows for friends or invitees, but not in lobby list
-	k_ELobbyTypePublic      ELobbyType = 2 // visible for friends and in lobby list
-	k_ELobbyTypeInvisible   ELobbyType = 3 // returned by search, but not visible to other friends
+	ELobbyTypePrivate     ELobbyType = 0 // only way to join the lobby is to invite to someone else
+	ELobbyTypeFriendsOnly ELobbyType = 1 // shows for friends or invitees, but not in lobby list
+	ELobbyTypePublic      ELobbyType = 2 // visible for friends and in lobby list
+	ELobbyTypeInvisible   ELobbyType = 3 // returned by search, but not visible to other friends
 	//    useful if you want a user in two lobbies, for example matching groups together
 	//	  a user can be in only one regular lobby, and up to two invisible lobbies
-	k_ELobbyTypePrivateUnique ELobbyType = 4 // private, unique and does not delete when empty - only one of these may exist per unique keypair set
+	ELobbyTypePrivateUnique ELobbyType = 4 // private, unique and does not delete when empty - only one of these may exist per unique keypair set
 )
 
 type LobbyCreated_t struct {
-	m_eResult EResult
+	Result EResult
 	// k_EResultOK - the lobby was successfully created
 	// k_EResultNoConnection - your Steam client doesn't have a connection to the back-end
 	// k_EResultTimeout - you the message to the Steam servers, but it didn't respond
@@ -297,18 +297,18 @@ type LobbyCreated_t struct {
 	// k_EResultAccessDenied - your game isn't set to allow lobbies, or your client does haven't rights to play the game
 	// k_EResultLimitExceeded - your game client has created too many lobbies
 
-	m_ulSteamIDLobby uint64 // chat room, zero if failed
+	SteamIDLobby uint64 // chat room, zero if failed
 }
 
 type LobbyMatchList_t struct {
-	m_nLobbiesMatching uint32
+	LobbiesMatching uint32
 }
 
 type LobbyEnter_t struct {
-	m_ulSteamIDLobby         uint64 // SteamID of the Lobby you have entered
-	m_rgfChatPermissions     uint32 // Permissions of the current user
-	m_bLocked                bool   // If true, then only invited users may join
-	m_EChatRoomEnterResponse uint32 // EChatRoomEnterResponse
+	SteamIDLobby           uint64 // SteamID of the Lobby you have entered
+	ChatPermissions        uint32 // Permissions of the current user
+	Locked                 bool   // If true, then only invited users may join
+	EChatRoomEnterResponse uint32 // EChatRoomEnterResponse
 }
 
 type SteamAPICallbackHandle uint64
