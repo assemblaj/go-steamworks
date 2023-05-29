@@ -525,6 +525,7 @@ const (
 	flatAPI_ISteamNetworkingMessages_CloseSessionWithUser     = "SteamAPI_ISteamNetworkingMessages_CloseSessionWithUser"
 	flatAPI_ISteamNetworkingMessages_CloseChannelWithUser     = "SteamAPI_ISteamNetworkingMessages_CloseChannelWithUser"
 	flatAPI_ISteamNetworkingMessages_GetSessionConnectionInfo = "SteamAPI_ISteamNetworkingMessages_GetSessionConnectionInfo"
+	flatAPI_SteamAPI_SteamNetworkingMessage_t_Release         = "SteamAPI_SteamNetworkingMessage_t_Release"
 
 	flatAPI_SteamAPI_SteamMatchmaking                   = "SteamAPI_SteamMatchmaking_v009"
 	flatAPI_SteamAPI_ISteamMatchmaking_RequestLobbyList = "SteamAPI_ISteamMatchmaking_RequestLobbyList"

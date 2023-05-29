@@ -11,11 +11,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// #cgo LDFLAGS: -L. -lsteam_export
-// #include "steam_export.h"
-
-import "C"
-
 const is32Bit = unsafe.Sizeof(int(0)) == 4
 
 type dll struct {
@@ -335,10 +330,6 @@ func (s steamUtils) IsSteamRunningOnSteamDeck() bool {
 	return byte(v) != 0
 }
 
-func release(message SteamNetworkingMessage_t) {
-	C.ReleaseSteamNetworkingMessageWrapper(&message)
-}
-
 type steamNetworkingMessages uintptr
 
 func SteamNetworkingMessages() ISteamNetworkingMessages {
@@ -416,6 +407,15 @@ func (s steamNetworkingMessages) GetSessionConnectionInfo(identityRemote SteamNe
 		panic(err)
 	}
 	return ESteamNetworkingConnectionState(v), info, stats
+}
+
+func ReleaseMessages(messages []SteamNetworkingMessage_t) {
+	for i := 0; i < len(messages); i++ {
+		_, err := theDLL.call(flatAPI_SteamAPI_SteamNetworkingMessage_t_Release, uintptr(unsafe.Pointer(&messages[i])))
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 type steamMatchmaking uintptr
