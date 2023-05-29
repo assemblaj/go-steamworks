@@ -223,10 +223,10 @@ type SteamNetConnectionInfo_t struct {
 	IdPOPRemote           SteamNetworkingPOPID
 	IdPOPRelay            SteamNetworkingPOPID
 	State                 ESteamNetworkingConnectionState
-	EndReason             int
+	EndReason             int32
 	EndDebug              [SteamNetworkingMaxConnectionCloseReason]byte
 	ConnectionDescription [SteamNetworkingMaxConnectionDescription]byte
-	Flags                 int /// Misc flags.  Bitmask of nSteamNetworkConnectionInfoFlags_Xxxx
+	Flags                 int32 /// Misc flags.  Bitmask of nSteamNetworkConnectionInfoFlags_Xxxx
 	reserved              [63]uint32
 }
 
@@ -263,14 +263,14 @@ type SteamNetConnectionRealTimeStatus_t struct {
 
 type SteamNetworkingMessage_t struct {
 	Data          *byte // m_pData
-	Size          int   // m_cbSize
+	Size          int32 // m_cbSize
 	Connection    HSteamNetConnection
 	PeerIdentity  SteamNetworkingIdentity // m_identityPeer
 	ConnUserData  int64
 	TimeReceived  SteamNetworkingMicroseconds // m_usecTimeReceived
 	MessageNumber int64                       // m_nMessageNumber
-	Channel       int                         // m_nChannel
-	Flags         int                         // m_nFlags
+	Channel       int32                       // m_nChannel
+	Flags         int32                       // m_nFlags
 	UserData      int64                       // m_nUserData
 	LaneIdx       uint16                      // m_idxLane
 	Padding       uint16                      // _pad1__
@@ -322,9 +322,9 @@ type HSteamUser int32
 
 type CallbackMsg_t struct {
 	m_hSteamUser HSteamUser // Specific user to whom this callback applies.
-	m_iCallback  int        // Callback identifier.  (Corresponds to the k_iCallback enum in the callback structure.)
+	m_iCallback  int32      // Callback identifier.  (Corresponds to the k_iCallback enum in the callback structure.)
 	m_pubParam   *uint8     // Points to the callback structure
-	m_cubParam   int        // Size of the data pointed to by m_pubParam
+	m_cubParam   int32      // Size of the data pointed to by m_pubParam
 }
 
 type SteamCallbackID uint32
@@ -368,6 +368,10 @@ const (
 	k_iSteamSTARCallbacks                               = 5500
 	k_iSteamRemotePlayCallbacks                         = 5700
 	k_iSteamChatCallbacks                               = 5900
+)
+
+const (
+	k_iSteamAPICallbackCallCompleted = SteamCallbackID(k_iSteamUtilsCallbacks + 3)
 )
 
 type SteamAPICallCompleted_t struct {
@@ -445,20 +449,20 @@ type ISteamUtils interface {
 // }
 
 type ISteamNetworkingMessages interface {
-	SendMessageToUser(identity SteamNetworkingIdentity, data []byte, sendFlags int, channel int) EResult
-	ReceiveMessagesOnChannel(localChannel int, maxMessages int) ([]SteamNetworkingMessage_t, EResult)
+	SendMessageToUser(identity SteamNetworkingIdentity, data []byte, sendFlags int32, channel int32) EResult
+	ReceiveMessagesOnChannel(localChannel int32, maxMessages int32) ([]SteamNetworkingMessage_t, EResult)
 	AcceptSessionWithUser(identityRemote SteamNetworkingIdentity) bool
 	CloseSessionWithUser(identityRemote SteamNetworkingIdentity) bool
-	CloseChannelWithUser(identityRemote SteamNetworkingIdentity, nLocalChannel int) bool
+	CloseChannelWithUser(identityRemote SteamNetworkingIdentity, nLocalChannel int32) bool
 	GetSessionConnectionInfo(identityRemote SteamNetworkingIdentity) (ESteamNetworkingConnectionState, SteamNetConnectionInfo_t, SteamNetConnectionRealTimeStatus_t)
 }
 
 type ISteamMatchmaking interface {
-	CreateLobby(eLobbyType ELobbyType, cMaxMembers int) (LobbyCreated_t, error)
+	CreateLobby(eLobbyType ELobbyType, cMaxMembers int32) (LobbyCreated_t, error)
 	RequestLobbyList() (list LobbyMatchList_t, err error)
 	// GetLobbyByIndex(iLobby int) CSteamID
 	// JoinLobby(steamIDLobby CSteamID) SteamAPICall_t
-	GetLobbyByIndex(iLobby int) CSteamID
+	GetLobbyByIndex(iLobby int32) CSteamID
 	LeaveLobby(steamIDLobby CSteamID)
 	// InviteUserToLobby(steamIDLobby, steamIDInvitee CSteamID) bool
 	// GetNumLobbyMembers(steamIDLobby CSteamID) int
@@ -527,11 +531,11 @@ const (
 	flatAPI_ISteamNetworkingMessages_GetSessionConnectionInfo = "SteamAPI_ISteamNetworkingMessages_GetSessionConnectionInfo"
 	flatAPI_SteamAPI_SteamNetworkingMessage_t_Release         = "SteamAPI_SteamNetworkingMessage_t_Release"
 
-	flatAPI_SteamAPI_SteamMatchmaking                   = "SteamAPI_SteamMatchmaking_v009"
-	flatAPI_SteamAPI_ISteamMatchmaking_RequestLobbyList = "SteamAPI_ISteamMatchmaking_RequestLobbyList"
-	flatAPI_SteamAPI_ISteamMatchmaking_GetLobbyByIndex  = "SteamAPI_ISteamMatchmaking_GetLobbyByIndex"
-	flatAPI_SteamAPI_ISteamMatchmaking_CreateLobby      = "SteamAPI_ISteamMatchmaking_CreateLobby"
-	flatAPI_SteamAPI_ISteamMatchmaking_LeaveLobby       = "SteamAPI_ISteamMatchmaking_LeaveLobby"
+	flatAPI_SteamMatchmaking                   = "SteamAPI_SteamMatchmaking_v009"
+	flatAPI_ISteamMatchmaking_RequestLobbyList = "SteamAPI_ISteamMatchmaking_RequestLobbyList"
+	flatAPI_ISteamMatchmaking_GetLobbyByIndex  = "SteamAPI_ISteamMatchmaking_GetLobbyByIndex"
+	flatAPI_ISteamMatchmaking_CreateLobby      = "SteamAPI_ISteamMatchmaking_CreateLobby"
+	flatAPI_ISteamMatchmaking_LeaveLobby       = "SteamAPI_ISteamMatchmaking_LeaveLobby"
 
 	SteamAPI_GetHSteamPipe                   = "SteamAPI_GetHSteamPipe"
 	SteamAPI_ManualDispatch_Init             = "SteamAPI_ManualDispatch_Init"
