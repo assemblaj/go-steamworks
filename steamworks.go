@@ -371,7 +371,10 @@ const (
 )
 
 const (
-	k_iSteamAPICallbackCallCompleted = SteamCallbackID(k_iSteamUtilsCallbacks + 3)
+	k_iSteamAPICallbackCallCompleted  = SteamCallbackID(k_iSteamUtilsCallbacks + 3)
+	k_iSteamAPICallbackLobbyEnter     = SteamCallbackID(k_iSteamMatchmakingCallbacks + 4)
+	k_iSteamAPICallbackLobbyCreated   = SteamCallbackID(k_iSteamMatchmakingCallbacks + 13)
+	k_iSteamAPICallbackLobbyMatchList = SteamCallbackID(k_iSteamMatchmakingCallbacks + 10)
 )
 
 type SteamAPICallCompleted_t struct {

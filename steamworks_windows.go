@@ -5,6 +5,7 @@ package steamworks
 
 import (
 	"errors"
+	"fmt"
 	"runtime"
 	"unsafe"
 
@@ -72,7 +73,6 @@ func Init() bool {
 	if err != nil {
 		panic(err)
 	}
-	manualDispatch_Init()
 	return byte(v) != 0
 }
 
@@ -434,13 +434,35 @@ func (s steamMatchmaking) CreateLobby(eLobbyType ELobbyType, cMaxMembers int32) 
 		panic(err)
 	}
 	apiHandle := SteamAPICallbackHandle(v)
-	data := getAPICallResult(apiHandle)
-	if data != nil {
-		created := (*LobbyCreated_t)(unsafe.Pointer(&data[0]))
-		return *created, nil
-	} else {
-		return msg, errors.New("could not complete CreateLobby call")
-	}
+	done := make(chan struct{})
+
+	registerCallback(func(p unsafe.Pointer, u uintptr, b bool, sa SteamAPICall) {
+		created := (*LobbyCreated_t)(p)
+		fmt.Println("Lobby Created: ")
+		fmt.Printf("Result: %d\n", created.Result)
+		fmt.Printf("SteamIDLobby: %d\n", created.SteamIDLobby)
+
+		msg = *created
+		done <- struct{}{}
+	}, uintptr(unsafe.Sizeof(LobbyCreated_t{})),
+		int32(k_iSteamAPICallbackLobbyCreated), SteamAPICall(apiHandle), false)
+
+	registerCallback(func(p unsafe.Pointer, u uintptr, b bool, sa SteamAPICall) {
+		created := (*LobbyEnter_t)(p)
+		fmt.Println("Lobby Enter: ")
+		fmt.Printf("ChatPermissions: %d\n", created.ChatPermissions)
+		fmt.Printf("EChatRoomEnterResponse: %d\n", created.EChatRoomEnterResponse)
+		fmt.Printf("SteamIDLobby: %d\n", created.SteamIDLobby)
+		fmt.Printf("Locked: %v\n", created.Locked)
+
+		done <- struct{}{}
+	}, uintptr(unsafe.Sizeof(LobbyEnter_t{})),
+		int32(k_iSteamAPICallbackLobbyEnter), SteamAPICall(apiHandle), false)
+
+	<-done
+	<-done
+
+	return msg, nil
 }
 
 func (s steamMatchmaking) RequestLobbyList() (list LobbyMatchList_t, err error) {
