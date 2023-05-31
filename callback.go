@@ -17,14 +17,25 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"time"
 	"unsafe"
 )
 
 type (
-	SteamAPICall = C.SteamAPICall_t
+	SteamAPICall     = C.SteamAPICall_t
+	LobbyInvite      = C.LobbyInvite_t
+	LobbyEnter       = C.LobbyEnter_t
+	LobbyDataUpdate  = C.LobbyDataUpdate_t
+	LobbyChatUpdate  = C.LobbyChatUpdate_t
+	LobbyChatMsg     = C.LobbyChatMsg_t
+	LobbyGameCreated = C.LobbyGameCreated_t
+	LobbyMatchList   = C.LobbyMatchList_t
+	LobbyKicked      = C.LobbyKicked_t
+	LobbyCreated     = C.LobbyCreated_t
 )
 
 func SteamAPI_ReleaseCurrentThreadMemory() { C.SteamAPI_ReleaseCurrentThreadMemory() }
+func SteamAPI_RunCallbacks()               { C.SteamAPI_RunCallbacks() }
 
 var (
 	callbackLock sync.Mutex
@@ -122,3 +133,19 @@ func GoString(str *C.char) string { return C.GoString(str) }
 
 // GoStringN wraps C.GoStringN.
 func GoStringN(str *C.char, maxSize uintptr) string { return C.GoStringN(str, C.int(maxSize)) }
+
+func runCallbacksForever() {
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	ticker := time.NewTicker(time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		SteamAPI_RunCallbacks()
+
+		select {
+		case <-ticker.C:
+		}
+	}
+}

@@ -73,6 +73,7 @@ func Init() bool {
 	if err != nil {
 		panic(err)
 	}
+	go runCallbacksForever()
 	return byte(v) != 0
 }
 
@@ -434,34 +435,26 @@ func (s steamMatchmaking) CreateLobby(eLobbyType ELobbyType, cMaxMembers int32) 
 		panic(err)
 	}
 	apiHandle := SteamAPICallbackHandle(v)
-	done := make(chan struct{})
 
 	registerCallback(func(p unsafe.Pointer, u uintptr, b bool, sa SteamAPICall) {
-		created := (*LobbyCreated_t)(p)
+		created := (*LobbyCreated)(p)
 		fmt.Println("Lobby Created: ")
-		fmt.Printf("Result: %d\n", created.Result)
-		fmt.Printf("SteamIDLobby: %d\n", created.SteamIDLobby)
+		fmt.Printf("Result: %d\n", created.EResult)
+		fmt.Printf("SteamIDLobby: %d\n", created.UlSteamIDLobby.value[0])
 
-		msg = *created
-		done <- struct{}{}
-	}, uintptr(unsafe.Sizeof(LobbyCreated_t{})),
+	}, uintptr(unsafe.Sizeof(LobbyCreated{})),
 		int32(k_iSteamAPICallbackLobbyCreated), SteamAPICall(apiHandle), false)
 
 	registerCallback(func(p unsafe.Pointer, u uintptr, b bool, sa SteamAPICall) {
-		created := (*LobbyEnter_t)(p)
+		created := (*LobbyEnter)(p)
 		fmt.Println("Lobby Enter: ")
-		fmt.Printf("ChatPermissions: %d\n", created.ChatPermissions)
+		fmt.Printf("ChatPermissions: %d\n", created.RgfChatPermissions)
 		fmt.Printf("EChatRoomEnterResponse: %d\n", created.EChatRoomEnterResponse)
-		fmt.Printf("SteamIDLobby: %d\n", created.SteamIDLobby)
-		fmt.Printf("Locked: %v\n", created.Locked)
+		fmt.Printf("SteamIDLobby: %d\n", created.UlSteamIDLobby.value[0])
+		fmt.Printf("Locked: %v\n", created.BLocked)
 
-		done <- struct{}{}
-	}, uintptr(unsafe.Sizeof(LobbyEnter_t{})),
+	}, uintptr(unsafe.Sizeof(LobbyEnter{})),
 		int32(k_iSteamAPICallbackLobbyEnter), SteamAPICall(apiHandle), false)
-
-	<-done
-	<-done
-
 	return msg, nil
 }
 
